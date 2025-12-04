@@ -1,0 +1,285 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.util.*;
+
+public class MedicinalPlantAnalysis extends JFrame implements ActionListener, KeyListener {
+
+    private JComboBox<String> symptomField;
+    private JTextArea resultArea;
+    private JButton searchButton, clearButton;
+    private HashMap<String, String> symptomData;
+    private java.util.List<String> allSymptoms;
+
+    // ---- CONSTRUCTOR (Main Interface) ----
+    public MedicinalPlantAnalysis() {
+        setTitle("🌿 Medicinal Plant Analysis");
+        setSize(800, 500);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout(15, 15));
+        getContentPane().setBackground(new Color(255, 240, 245));
+
+        // ---- HEADER PANEL ----
+        JPanel headerPanel = new JPanel() {
+            @Override
+ protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                GradientPaint gp = new GradientPaint(0, 0, new Color(102, 0, 51),
+                        getWidth(), getHeight(),
+                        new Color(153, 0, 76));
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        headerPanel.setPreferredSize(new Dimension(800, 80));
+        headerPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 20, 10));
+        headerPanel.setOpaque(false);
+
+        // ---- Leaf Icon ----
+        ImageIcon leafIcon = new ImageIcon("C:\\Users\\YALINI R\\Downloads\\09399acb-5a2d-454e-907b-c164838df65e.png");
+        Image scaledLeaf = leafIcon.getImage().getScaledInstance(55, 55, Image.SCALE_SMOOTH);
+        JLabel leafLabel = new JLabel(new ImageIcon(scaledLeaf));
+        leafLabel.setOpaque(false);
+        leafLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
+        headerPanel.add(leafLabel);
+// ---- Title ----
+        JLabel title = new JLabel("Medicinal Plant Analysis");
+        title.setForeground(Color.WHITE);
+        title.setFont(new Font("Georgia", Font.BOLD, 26));
+        headerPanel.add(title);
+
+        add(headerPanel, BorderLayout.NORTH);
+
+        // ---- MAIN PANEL ----
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        mainPanel.setBackground(new Color(255, 240, 245));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
+        mainPanel.setOpaque(false);
+
+        // ---- INPUT PANEL ----
+        JPanel inputPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 15));
+        inputPanel.setBackground(new Color(255, 240, 245));
+
+        JLabel label = new JLabel("Enter Symptom:");
+        label.setForeground(new Color(102, 0, 51));
+        label.setFont(new Font("Segoe UI", Font.BOLD, 16));
+
+        symptomField = new JComboBox<>();
+        symptomField.setEditable(true);
+        symptomField.setPreferredSize(new 
+Dimension(250, 32));
+        symptomField.getEditor().getEditorComponent().addKeyListener(this);
+        JTextField editor = (JTextField) symptomField.getEditor().getEditorComponent();
+        editor.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        editor.setBackground(new Color(255, 240, 245));
+        editor.setBorder(BorderFactory.createLineBorder(new Color(153, 0, 76), 1));
+        symptomField.setBackground(new Color(255, 240, 245));
+        symptomField.setBorder(BorderFactory.createEmptyBorder());
+        symptomField.setOpaque(false);
+
+        // ---- Buttons ----
+        searchButton = createButton("Search");
+        clearButton = createButton("Clear");
+
+        inputPanel.add(label);
+        inputPanel.add(symptomField);
+        inputPanel.add(searchButton);
+        inputPanel.add(clearButton);
+
+        // ---- RESULT AREA ----
+        JPanel resultCard = new JPanel(new BorderLayout());
+        resultCard.setBackground(Color.WHITE);
+resultCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(153, 0, 76), 2),
+                BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
+        resultCard.setPreferredSize(new Dimension(720, 300));
+
+        resultArea = new JTextArea();
+        resultArea.setFont(new Font("Serif", Font.PLAIN, 16));
+        resultArea.setEditable(false);
+        resultArea.setLineWrap(true);
+        resultArea.setWrapStyleWord(true);
+        resultArea.setBackground(new Color(255, 250, 252));
+        resultArea.setForeground(new Color(64, 0, 32));
+        JScrollPane scrollPane = new JScrollPane(resultArea);
+        scrollPane.setBorder(null);
+        scrollPane.setOpaque(false);
+        resultCard.add(scrollPane, BorderLayout.CENTER);
+
+        // ---- Add to main layout ----
+        mainPanel.add(inputPanel, BorderLayout.NORTH);
+        mainPanel.add(resultCard, BorderLayout.CENTER);
+        add(mainPanel);
+  // ---- BUTTON ACTIONS ----
+        searchButton.addActionListener(this);
+        clearButton.addActionListener(this);
+
+        // ---- Load data ----
+        symptomData = new HashMap<>();
+        allSymptoms = new ArrayList<>();
+        loadCSV("C:\\Users\\YALINI R\\Downloads\\easy_symptoms_with_treatments (1).csv");
+    }
+
+    // ---- Create Styled Buttons ----
+    private JButton createButton(String text) {
+        JButton button = new JButton(text);
+        button.setBackground(new Color(153, 0, 76));
+        button.setForeground(Color.WHITE);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(179, 0, 89));
+   }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(153, 0, 76));
+            }
+        });
+        return button;
+    }
+
+    private void loadCSV(String path) {
+        File file = new File(path);
+        if (!file.exists()) {
+            JOptionPane.showMessageDialog(this, "⚠ CSV file not found: " + path);
+            return;
+        }
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            boolean header = true;
+            Set<String> uniqueSymptoms = new HashSet<>();
+            while ((line = br.readLine()) != null) {
+                if (header) {
+                    header = false;
+                    continue;
+                }
+                String[] parts = line.split(",", 2);
+                if (parts.length >= 2) {
+String symptom = parts[0].trim().toLowerCase();
+                    if (!uniqueSymptoms.contains(symptom)) {
+                        uniqueSymptoms.add(symptom);
+                        symptomData.put(symptom, parts[1].trim());
+                        allSymptoms.add(symptom);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "⚠ Error loading CSV file!");
+        }
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        Object src = e.getSource();
+        if (src == searchButton) {
+            String query = ((JTextField) symptomField.getEditor().getEditorComponent()).getText().trim().toLowerCase();
+            if (query.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter a symptom.");
+                return;
+            }
+            if (symptomData.containsKey(query)) {
+                resultArea.setText("Symptom: " + capitalize(query) +
+                        "\n\nSuggested Treatment:\n" + symptomData.get(query));
+} else {
+                resultArea.setText("No treatment found for \"" + capitalize(query) + "\".");
+            }
+        } else if (src == clearButton) {
+            ((JTextField) symptomField.getEditor().getEditorComponent()).setText("");
+            resultArea.setText("");
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        String typed = ((JTextField) symptomField.getEditor().getEditorComponent()).getText().trim().toLowerCase();
+        symptomField.removeAllItems();
+
+        if (typed.isEmpty()) {
+            symptomField.hidePopup();
+            return;
+        }
+
+        Set<String> shown = new HashSet<>();
+        for (String s : allSymptoms) {
+            if (s.startsWith(typed) && !shown.contains(s)) {
+                symptomField.addItem(capitalize(s));
+                shown.add(s);
+            }
+        }
+ if (symptomField.getItemCount() > 0) {
+            symptomField.showPopup();
+        } else {
+            symptomField.hidePopup();
+        }
+
+        ((JTextField) symptomField.getEditor().getEditorComponent()).setText(typed);
+    }
+
+    @Override public void keyTyped(KeyEvent e) {}
+    @Override public void keyPressed(KeyEvent e) {}
+
+    private String capitalize(String s) {
+        if (s == null || s.isEmpty()) return s;
+        return s.substring(0, 1).toUpperCase() + s.substring(1);
+    }
+
+    // ---- MAIN METHOD (Welcome Page + Main App) ----
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new WelcomePage());
+    }
+}
+
+// 🌿 ---- WELCOME PAGE ----
+class WelcomePage extends JFrame implements ActionListener {
+ private JButton startButton;
+
+    public WelcomePage() {
+        setTitle("Medicinal Plant Analysis");
+        setSize(700, 400);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        getContentPane().setBackground(new Color(255, 240, 245));
+        setLayout(new BorderLayout());
+
+        JLabel heading = new JLabel("Your Healing Starts with a Leaf", SwingConstants.CENTER);
+        heading.setFont(new Font("Georgia", Font.BOLD | Font.ITALIC, 26));
+        heading.setForeground(new Color(102, 0, 51));
+        heading.setBorder(BorderFactory.createEmptyBorder(80, 10, 20, 10));
+
+        startButton = new JButton("Explore");
+        startButton.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        startButton.setBackground(new Color(153, 0, 76));
+        startButton.setForeground(Color.WHITE);
+        startButton.setFocusPainted(false);
+        startButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+ startButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        startButton.addActionListener(this);
+
+        JPanel btnPanel = new JPanel();
+        btnPanel.setBackground(new Color(255, 240, 245));
+        btnPanel.add(startButton);
+
+        add(heading, BorderLayout.CENTER);
+        add(btnPanel, BorderLayout.SOUTH);
+
+        setVisible(true);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        dispose();
+        MedicinalPlantAnalysis app = new MedicinalPlantAnalysis();
+        app.setVisible(true);
+    }
+}
+
+
+
